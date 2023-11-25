@@ -22,12 +22,23 @@ class LoadGroupRepoSpy implements LoadGroupRepo {
   }
 }
 
+type SutTypes = {
+  sut: DeleteEvent
+  loadGroupRepo: LoadGroupRepoSpy
+}
+
+const makeSut = (): SutTypes => {
+  const loadGroupRepo = new LoadGroupRepoSpy()
+  const sut = new DeleteEvent(loadGroupRepo)
+  return { sut, loadGroupRepo }
+}
+
 describe('DeleteEvent', () => {
+  const id = 'any_id'
+  const userId = 'any_user_id'
+
   it('should get group data', async () => {
-    const id = 'any_event_id'
-    const userId = 'any_user_id'
-    const loadGroupRepo = new LoadGroupRepoSpy()
-    const sut = new DeleteEvent(loadGroupRepo)
+    const { loadGroupRepo, sut } = makeSut()
 
     await sut.perform({ id, userId })
 
