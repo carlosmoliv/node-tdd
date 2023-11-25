@@ -14,9 +14,11 @@ interface LoadGroupRepo {
 
 class LoadGroupRepoSpy implements LoadGroupRepo {
   eventId: string | undefined
+  callsCount = 0
 
   async load ({ eventId }: { eventId: string }): Promise<void> {
     this.eventId = eventId
+    this.callsCount++
   }
 }
 
@@ -30,5 +32,6 @@ describe('DeleteEvent', () => {
     await sut.perform({ id, userId })
 
     expect(loadGroupRepo.eventId).toBe(id)
+    expect(loadGroupRepo.callsCount).toBe(1)
   })
 })
