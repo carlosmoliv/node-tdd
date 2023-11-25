@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDirs": ["./src", "./tests"],
+    "target": "ES2021",
+    "incremental": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@domain/*": ["domain/*"],
+      "@infra/*": ["infra/*"],
+      "@main/*": ["main/*"],
+      "@application/*": ["presentation/*"],
+      "@tests/*": ["../tests/*"]
+    },
+    "strict": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+  },
+  "include": ["./src", "./tests"]
+}
