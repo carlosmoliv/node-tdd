@@ -4,21 +4,24 @@ class DeleteEvent {
   ) {}
 
   async perform ({ id }: { id: string, userId: string }): Promise<void> {
-    await this.loadGroupRepo.load({ eventId: id })
+    const group = await this.loadGroupRepo.load({ eventId: id })
+    if (group === undefined) throw new Error('Group not found')
   }
 }
 
 interface LoadGroupRepo {
-  load: (input: { eventId: string }) => Promise<void>
+  load: (input: { eventId: string }) => Promise<any>
 }
 
 class LoadGroupRepoSpy implements LoadGroupRepo {
-  eventId: string | undefined
+  eventId?: string
   callsCount = 0
+  output: any = {}
 
-  async load ({ eventId }: { eventId: string }): Promise<void> {
+  async load ({ eventId }: { eventId: string }): Promise<undefined> {
     this.eventId = eventId
     this.callsCount++
+    return this.output
   }
 }
 
@@ -44,5 +47,14 @@ describe('DeleteEvent', () => {
 
     expect(loadGroupRepo.eventId).toBe(id)
     expect(loadGroupRepo.callsCount).toBe(1)
+  })
+
+  it('should throw if eventId is invalid', async () => {
+    const { sut, loadGroupRepo } = makeSut()
+    loadGroupRepo.output = undefined
+
+    const promise = sut.perform({ id, userId })
+
+    await expect(promise).rejects.toThrow()
   })
 })
