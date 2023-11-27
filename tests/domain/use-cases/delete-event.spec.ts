@@ -8,6 +8,7 @@ class DeleteEvent {
     if (group === undefined) throw new Error('Group not found')
     const user = group.users.find(user => user.id === userId)
     if (user === undefined) throw new Error('User not found')
+    if (user.permission === 'user') throw new Error('User not authorized')
   }
 }
 
@@ -62,7 +63,7 @@ describe('DeleteEvent', () => {
     expect(loadGroupRepo.callsCount).toBe(1)
   })
 
-  it('should throw if eventId is invalid', async () => {
+  it('should throw an error if eventId is invalid', async () => {
     const { sut, loadGroupRepo } = makeSut()
     loadGroupRepo.output = undefined
 
@@ -71,13 +72,24 @@ describe('DeleteEvent', () => {
     await expect(promise).rejects.toThrow()
   })
 
-  it('should throw if userId is invalid', async () => {
+  it('should throw an error if userId is invalid', async () => {
     const { sut, loadGroupRepo } = makeSut()
     loadGroupRepo.output = {
       users: [{ id: 'any_user_id', permission: 'any' }]
     }
 
     const promise = sut.perform({ id, userId: 'invalid_user_id' })
+
+    await expect(promise).rejects.toThrow()
+  })
+
+  it('should throw an error when permission user', async () => {
+    const { sut, loadGroupRepo } = makeSut()
+    loadGroupRepo.output = {
+      users: [{ id: 'any_user_id', permission: 'user' }]
+    }
+
+    const promise = sut.perform({ id, userId })
 
     await expect(promise).rejects.toThrow()
   })
