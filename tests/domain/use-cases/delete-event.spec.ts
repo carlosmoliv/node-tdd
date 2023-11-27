@@ -1,7 +1,8 @@
 class DeleteEvent {
   constructor (
     private readonly loadGroupRepo: LoadGroupRepo,
-    private readonly deleteEventRepo: DeleteEventRepo
+    private readonly deleteEventRepo: DeleteEventRepo,
+    private readonly deleteMatchRepo: DeleteMatchRepo
   ) {}
 
   async perform ({ id, userId }: { id: string, userId: string }): Promise<void> {
@@ -11,6 +12,7 @@ class DeleteEvent {
     if (user === undefined) throw new Error('User not found')
     if (user.permission === 'user') throw new Error('User not authorized')
     await this.deleteEventRepo.delete({ id })
+    await this.deleteMatchRepo.delete({ eventId: id })
   }
 }
 
@@ -20,6 +22,10 @@ interface LoadGroupRepo {
 
 interface DeleteEventRepo {
   delete: (input: { id: string }) => Promise<void>
+}
+
+interface DeleteMatchRepo {
+  delete: (input: { eventId: string }) => Promise<void>
 }
 
 type Group = {
@@ -55,17 +61,34 @@ class DeleteEventRepoMock implements DeleteEventRepo {
   }
 }
 
+class DeleteMatchRepoMock implements DeleteMatchRepo {
+  eventId?: string
+  callsCount = 0
+
+  async delete ({ eventId }: { eventId: string }): Promise<void> {
+    this.eventId = eventId
+    this.callsCount++
+  }
+}
+
 type SutTypes = {
   sut: DeleteEvent
   loadGroupRepo: LoadGroupRepoSpy
   deleteEventRepo: DeleteEventRepoMock
+  deleteMatchRepo: DeleteMatchRepoMock
 }
 
 const makeSut = (): SutTypes => {
   const loadGroupRepo = new LoadGroupRepoSpy()
   const deleteEventRepo = new DeleteEventRepoMock()
-  const sut = new DeleteEvent(loadGroupRepo, deleteEventRepo)
-  return { sut, loadGroupRepo, deleteEventRepo }
+  const deleteMatchRepo = new DeleteMatchRepoMock()
+  const sut = new DeleteEvent(loadGroupRepo, deleteEventRepo, deleteMatchRepo)
+  return {
+    sut,
+    loadGroupRepo,
+    deleteEventRepo,
+    deleteMatchRepo
+  }
 }
 
 describe('DeleteEvent', () => {
@@ -141,5 +164,14 @@ describe('DeleteEvent', () => {
 
     expect(deleteEventRepo.id).toBe(id)
     expect(deleteEventRepo.callsCount).toBe(1)
+  })
+
+  it('should delete matches', async () => {
+    const { sut, deleteMatchRepo } = makeSut()
+
+    await sut.perform({ id, userId })
+
+    expect(deleteMatchRepo.eventId).toBe(id)
+    expect(deleteMatchRepo.callsCount).toBe(1)
   })
 })
