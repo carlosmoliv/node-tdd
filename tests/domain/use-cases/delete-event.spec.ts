@@ -22,14 +22,14 @@ type Group = {
 
 type GroupUser = {
   id: string
-  permission: string
+  permission: 'owner' | 'admin' | 'user'
 }
 
 class LoadGroupRepoSpy implements LoadGroupRepo {
   eventId?: string
   callsCount = 0
   output?: Group = {
-    users: [{ id: 'any_user_id', permission: 'any' }]
+    users: [{ id: 'any_user_id', permission: 'admin' }]
   }
 
   async load ({ eventId }: { eventId: string }): Promise<Group | undefined> {
@@ -75,7 +75,7 @@ describe('DeleteEvent', () => {
   it('should throw an error if userId is invalid', async () => {
     const { sut, loadGroupRepo } = makeSut()
     loadGroupRepo.output = {
-      users: [{ id: 'any_user_id', permission: 'any' }]
+      users: [{ id: 'any_user_id', permission: 'admin' }]
     }
 
     const promise = sut.perform({ id, userId: 'invalid_user_id' })
@@ -92,5 +92,27 @@ describe('DeleteEvent', () => {
     const promise = sut.perform({ id, userId })
 
     await expect(promise).rejects.toThrow()
+  })
+
+  it('should not throw an error when permission is admin', async () => {
+    const { sut, loadGroupRepo } = makeSut()
+    loadGroupRepo.output = {
+      users: [{ id: 'any_user_id', permission: 'admin' }]
+    }
+
+    const promise = sut.perform({ id, userId })
+
+    await expect(promise).resolves.not.toThrow()
+  })
+
+  it('should not throw an error when permission is owner', async () => {
+    const { sut, loadGroupRepo } = makeSut()
+    loadGroupRepo.output = {
+      users: [{ id: 'any_user_id', permission: 'owner' }]
+    }
+
+    const promise = sut.perform({ id, userId })
+
+    await expect(promise).resolves.not.toThrow()
   })
 })
