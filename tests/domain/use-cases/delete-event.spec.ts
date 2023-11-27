@@ -3,22 +3,35 @@ class DeleteEvent {
     private readonly loadGroupRepo: LoadGroupRepo
   ) {}
 
-  async perform ({ id }: { id: string, userId: string }): Promise<void> {
+  async perform ({ id, userId }: { id: string, userId: string }): Promise<void> {
     const group = await this.loadGroupRepo.load({ eventId: id })
     if (group === undefined) throw new Error('Group not found')
+    const user = group.users.find(user => user.id === userId)
+    if (user === undefined) throw new Error('User not found')
   }
 }
 
 interface LoadGroupRepo {
-  load: (input: { eventId: string }) => Promise<any>
+  load: (input: { eventId: string }) => Promise<Group | undefined>
+}
+
+type Group = {
+  users: GroupUser[]
+}
+
+type GroupUser = {
+  id: string
+  permission: string
 }
 
 class LoadGroupRepoSpy implements LoadGroupRepo {
   eventId?: string
   callsCount = 0
-  output: any = {}
+  output?: Group = {
+    users: [{ id: 'any_user_id', permission: 'any' }]
+  }
 
-  async load ({ eventId }: { eventId: string }): Promise<undefined> {
+  async load ({ eventId }: { eventId: string }): Promise<Group | undefined> {
     this.eventId = eventId
     this.callsCount++
     return this.output
@@ -37,7 +50,7 @@ const makeSut = (): SutTypes => {
 }
 
 describe('DeleteEvent', () => {
-  const id = 'any_id'
+  const id = 'any_event_id'
   const userId = 'any_user_id'
 
   it('should get group data', async () => {
@@ -54,6 +67,17 @@ describe('DeleteEvent', () => {
     loadGroupRepo.output = undefined
 
     const promise = sut.perform({ id, userId })
+
+    await expect(promise).rejects.toThrow()
+  })
+
+  it('should throw if userId is invalid', async () => {
+    const { sut, loadGroupRepo } = makeSut()
+    loadGroupRepo.output = {
+      users: [{ id: 'any_user_id', permission: 'any' }]
+    }
+
+    const promise = sut.perform({ id, userId: 'invalid_user_id' })
 
     await expect(promise).rejects.toThrow()
   })
