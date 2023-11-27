@@ -1,6 +1,7 @@
 class DeleteEvent {
   constructor (
-    private readonly loadGroupRepo: LoadGroupRepo
+    private readonly loadGroupRepo: LoadGroupRepo,
+    private readonly deleteEventRepo: DeleteEventRepo
   ) {}
 
   async perform ({ id, userId }: { id: string, userId: string }): Promise<void> {
@@ -9,11 +10,16 @@ class DeleteEvent {
     const user = group.users.find(user => user.id === userId)
     if (user === undefined) throw new Error('User not found')
     if (user.permission === 'user') throw new Error('User not authorized')
+    await this.deleteEventRepo.delete({ id })
   }
 }
 
 interface LoadGroupRepo {
   load: (input: { eventId: string }) => Promise<Group | undefined>
+}
+
+interface DeleteEventRepo {
+  delete: (input: { id: string }) => Promise<void>
 }
 
 type Group = {
@@ -39,15 +45,27 @@ class LoadGroupRepoSpy implements LoadGroupRepo {
   }
 }
 
+class DeleteEventRepoMock implements DeleteEventRepo {
+  id?: string
+  callsCount = 0
+
+  async delete ({ id }: { id: string }): Promise<void> {
+    this.id = id
+    this.callsCount++
+  }
+}
+
 type SutTypes = {
   sut: DeleteEvent
   loadGroupRepo: LoadGroupRepoSpy
+  deleteEventRepo: DeleteEventRepoMock
 }
 
 const makeSut = (): SutTypes => {
   const loadGroupRepo = new LoadGroupRepoSpy()
-  const sut = new DeleteEvent(loadGroupRepo)
-  return { sut, loadGroupRepo }
+  const deleteEventRepo = new DeleteEventRepoMock()
+  const sut = new DeleteEvent(loadGroupRepo, deleteEventRepo)
+  return { sut, loadGroupRepo, deleteEventRepo }
 }
 
 describe('DeleteEvent', () => {
@@ -114,5 +132,14 @@ describe('DeleteEvent', () => {
     const promise = sut.perform({ id, userId })
 
     await expect(promise).resolves.not.toThrow()
+  })
+
+  it('should delete an event', async () => {
+    const { sut, deleteEventRepo } = makeSut()
+
+    await sut.perform({ id, userId })
+
+    expect(deleteEventRepo.id).toBe(id)
+    expect(deleteEventRepo.callsCount).toBe(1)
   })
 })
