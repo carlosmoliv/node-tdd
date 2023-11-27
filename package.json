@@ -43,6 +43,8 @@
   },
   "_moduleAliases": {
     "@root": ".",
-    "@main": "src/main"
+    "@main": "src/main",
+    "@domain": "src/domain",
+    "@tests": "/tests"
   }
 }

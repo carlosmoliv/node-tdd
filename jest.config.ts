@@ -10,8 +10,10 @@ const config: Config = {
   coverageDirectory: "coverage",
   coverageProvider: "v8",
   moduleNameMapper: {
-    '@/tests/(.+)': '<rootDir>/tests/$1',
-    '@/(.+)': '<rootDir>/src/$1'
+    '^@main/(.*)$': '<rootDir>/src/main/$1',
+    '^@domain/(.*)$': '<rootDir>/src/domain/$1',
+    '^@tests/(.*)$': '<rootDir>/tests/$1',
+    '^@/(.*)$': '<rootDir>/src/$1'
   },
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   setupFiles: ['dotenv/config'],
