@@ -1,5 +1,10 @@
+import { Group } from '@domain/models'
 import { DeleteEvent } from '@domain/use-cases'
 import { DeleteEventRepoMock, DeleteMatchRepoMock, LoadGroupRepoSpy } from '@tests/domain/repositories'
+
+jest.mock('@domain/models/group', () => ({
+  Group: jest.fn()
+}))
 
 type SutTypes = {
   sut: DeleteEvent
@@ -24,6 +29,14 @@ const makeSut = (): SutTypes => {
 describe('DeleteEvent', () => {
   const id = 'any_event_id'
   const userId = 'any_user_id'
+  let isAdmin: jest.Mock
+
+  beforeAll(() => {
+    isAdmin = jest.fn().mockReturnValue(true)
+    const fakeGroup = jest.fn().mockImplementation(() => ({ isAdmin }))
+    jest
+      .mocked(Group).mockImplementation(fakeGroup)
+  })
 
   it('should get group data', async () => {
     const { loadGroupRepo, sut } = makeSut()
@@ -43,44 +56,17 @@ describe('DeleteEvent', () => {
     await expect(promise).rejects.toThrow()
   })
 
-  it('should throw an error if userId is invalid', async () => {
-    const { sut, loadGroupRepo } = makeSut()
-    loadGroupRepo.output = {
-      users: [{ id: 'any_user_id', permission: 'admin' }]
-    }
-
-    const promise = sut.perform({ id, userId: 'invalid_user_id' })
-
-    await expect(promise).rejects.toThrow()
-  })
-
-  it('should throw an error when permission user', async () => {
-    const { sut, loadGroupRepo } = makeSut()
-    loadGroupRepo.output = {
-      users: [{ id: 'any_user_id', permission: 'user' }]
-    }
+  it('should throw an error when user is not an admin', async () => {
+    const { sut } = makeSut()
+    isAdmin.mockReturnValueOnce(false)
 
     const promise = sut.perform({ id, userId })
 
     await expect(promise).rejects.toThrow()
   })
 
-  it('should not throw an error when permission is admin', async () => {
-    const { sut, loadGroupRepo } = makeSut()
-    loadGroupRepo.output = {
-      users: [{ id: 'any_user_id', permission: 'admin' }]
-    }
-
-    const promise = sut.perform({ id, userId })
-
-    await expect(promise).resolves.not.toThrow()
-  })
-
-  it('should not throw an error when permission is owner', async () => {
-    const { sut, loadGroupRepo } = makeSut()
-    loadGroupRepo.output = {
-      users: [{ id: 'any_user_id', permission: 'owner' }]
-    }
+  it('should not throw an error when user is an admin', async () => {
+    const { sut } = makeSut()
 
     const promise = sut.perform({ id, userId })
 
